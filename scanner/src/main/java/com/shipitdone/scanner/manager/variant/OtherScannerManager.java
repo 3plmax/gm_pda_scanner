@@ -41,7 +41,7 @@ public class OtherScannerManager implements ScannerManager {
         }
     };
 
-    OtherScannerManager(Context context) {
+    public OtherScannerManager(Context context) {
         this.mContext = context;
     }
 

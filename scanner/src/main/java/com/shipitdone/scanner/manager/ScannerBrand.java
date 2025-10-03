@@ -22,7 +22,6 @@ public enum ScannerBrand {
 
     // Manufacturers identified by a single primary name
     IDATA("IDATA", "T1", "MC005"),
-    NEWLAND("NEWLAND", "NLS-MT90", "NLS-MT66", "NLS-MT6210", "NLS-MT9210"),
     ALPS("ALPS"),
     SEUIC("SEUIC"),
     SIGAN("SIGAN", "SG6900"),

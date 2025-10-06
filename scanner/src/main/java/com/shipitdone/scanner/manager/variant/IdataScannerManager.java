@@ -1,15 +1,20 @@
 package com.shipitdone.scanner.manager.variant;
 
+import static android.content.Context.RECEIVER_EXPORTED;
+
+import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.support.annotation.NonNull;
+import android.os.Build;
+import androidx.annotation.NonNull;
 import android.util.Log;
 import android.view.KeyEvent;
 
 import com.shipitdone.scanner.manager.ScannerManager;
 import com.shipitdone.scanner.manager.ScannerVariantManager;
+import com.shipitdone.scanner.util.BroadcastUtil;
 
 public class IdataScannerManager implements ScannerManager {
     private Context activity;
@@ -141,6 +146,6 @@ public class IdataScannerManager implements ScannerManager {
     private void registerReceiver() {
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(RES_ACTION);
-        activity.registerReceiver(receiver, intentFilter);
+        BroadcastUtil.registerReceiver(activity, receiver, intentFilter);
     }
 }

@@ -2,7 +2,7 @@ package com.shipitdone.scanner_demo;
 
 import android.os.Build;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -10,7 +10,7 @@ import android.widget.Toast;
 
 import com.shipitdone.scanner.manager.ScannerVariantManager;
 
-import cn.guanmai.gm_pda_scanner.R;
+import com.shipitdone.scanner_demo.R;
 
 public class MainActivity extends AppCompatActivity {
     private ScannerVariantManager mScannerManager;

@@ -4,11 +4,12 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 import android.view.KeyEvent;
 
 import com.shipitdone.scanner.manager.ScannerManager;
 import com.shipitdone.scanner.manager.ScannerVariantManager;
+import com.shipitdone.scanner.util.BroadcastUtil;
 
 public class JepowerScannerManager implements ScannerManager {
     private static JepowerScannerManager instance;
@@ -96,6 +97,6 @@ public class JepowerScannerManager implements ScannerManager {
     private void registerReceiver() {
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(ACTION_DATA_CODE_RECEIVED);
-        activity.registerReceiver(receiver, intentFilter);
+        BroadcastUtil.registerReceiver(activity, receiver, intentFilter);
     }
 }

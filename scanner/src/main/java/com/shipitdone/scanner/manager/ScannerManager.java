@@ -1,6 +1,6 @@
 package com.shipitdone.scanner.manager;
 
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 import android.view.KeyEvent;
 
 public interface ScannerManager {

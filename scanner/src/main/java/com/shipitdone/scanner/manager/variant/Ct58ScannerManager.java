@@ -8,11 +8,12 @@ import android.device.ScanManager;
 import android.device.scanner.configuration.PropertyID;
 import android.os.Handler;
 import android.os.Looper;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 import android.text.TextUtils;
 import android.view.KeyEvent;
 
 import com.shipitdone.scanner.manager.ScannerManager;
+import com.shipitdone.scanner.util.BroadcastUtil;
 import com.shipitdone.scanner.util.LogUtil;
 import com.shipitdone.scanner.manager.ScannerVariantManager;
 
@@ -78,7 +79,7 @@ public class Ct58ScannerManager implements ScannerManager {
 
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(ACTION_DATA_CODE_RECEIVED);
-        mContext.registerReceiver(receiver, intentFilter);
+        BroadcastUtil.registerReceiver(mContext, receiver, intentFilter);
 
         listener.onScannerServiceConnected();
     }

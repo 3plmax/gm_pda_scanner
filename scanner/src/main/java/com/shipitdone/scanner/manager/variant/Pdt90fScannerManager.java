@@ -4,11 +4,12 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 import android.view.KeyEvent;
 
 import com.shipitdone.scanner.manager.ScannerManager;
 import com.shipitdone.scanner.manager.ScannerVariantManager;
+import com.shipitdone.scanner.util.BroadcastUtil;
 
 public class Pdt90fScannerManager implements ScannerManager {
     private static Pdt90fScannerManager instance;
@@ -113,6 +114,6 @@ public class Pdt90fScannerManager implements ScannerManager {
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(ACTION_DATA_CODE_RECEIVED);
         intentFilter.setPriority(Integer.MAX_VALUE);
-        activity.registerReceiver(receiver, intentFilter);
+        BroadcastUtil.registerReceiver(activity, receiver, intentFilter);
     }
 }

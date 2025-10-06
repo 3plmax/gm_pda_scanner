@@ -6,11 +6,12 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Handler;
 import android.os.Looper;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 import android.text.TextUtils;
 import android.view.KeyEvent;
 
 import com.shipitdone.scanner.manager.ScannerManager;
+import com.shipitdone.scanner.util.BroadcastUtil;
 import com.shipitdone.scanner.util.LogUtil;
 import com.shipitdone.scanner.manager.ScannerVariantManager;
 
@@ -58,7 +59,7 @@ public class Kp18ScannerManager implements ScannerManager {
     public void init() {
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(ACTION_DATA_CODE_RECEIVED);
-        mContext.registerReceiver(receiver, intentFilter);
+        BroadcastUtil.registerReceiver(mContext, receiver, intentFilter);
 
         listener.onScannerServiceConnected();
     }

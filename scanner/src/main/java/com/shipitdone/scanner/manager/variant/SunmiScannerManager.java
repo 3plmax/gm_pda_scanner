@@ -1,5 +1,7 @@
 package com.shipitdone.scanner.manager.variant;
 
+import static android.content.Context.RECEIVER_EXPORTED;
+
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -7,16 +9,18 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.RemoteException;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 import android.util.Log;
 import android.view.KeyEvent;
 
 import com.shipitdone.scanner.manager.ScannerManager;
 import com.shipitdone.scanner.manager.ScannerVariantManager;
+import com.shipitdone.scanner.util.BroadcastUtil;
 import com.sunmi.scanner.IScanInterface;
 
 public class SunmiScannerManager implements ScannerManager {
@@ -183,6 +187,6 @@ public class SunmiScannerManager implements ScannerManager {
     private void registerReceiver() {
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(ACTION_DATA_CODE_RECEIVED);
-        activity.registerReceiver(receiver, intentFilter);
+        BroadcastUtil.registerReceiver(activity, receiver, intentFilter);
     }
 }

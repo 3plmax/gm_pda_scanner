@@ -1,17 +1,16 @@
 apply plugin: 'com.android.library'
-apply plugin: 'com.github.dcendents.android-maven'
 
 group='com.github.3plmax'
 
-def DEFAULT_COMPILE_SDK_VERSION = 28
-def DEFAULT_TARGET_SDK_VERSION  = 28
-def DEFAULT_SUPPORT_LIB_VERSION = "28.0.0"
+def DEFAULT_COMPILE_SDK_VERSION = 36
+def DEFAULT_TARGET_SDK_VERSION  = 36
+def DEFAULT_APPCOMPAT_VERSION = "1.7.1"
 
 android {
     compileSdkVersion project.hasProperty('compileSdkVersion') ? project.compileSdkVersion : DEFAULT_COMPILE_SDK_VERSION
 
     defaultConfig {
-        minSdkVersion 16
+        minSdkVersion 28
         targetSdkVersion project.hasProperty('targetSdkVersion') ? project.targetSdkVersion : DEFAULT_TARGET_SDK_VERSION
         ndk {
             abiFilters "armeabi", "armeabi-v7a"
@@ -30,13 +29,18 @@ android {
             jniLibs.srcDirs = ['libs']
         }
     }
+    namespace 'com.shipitdone.scanner'
+    buildFeatures {
+        aidl true
+    }
 
 }
 
 dependencies {
-    def supportLibVersion = project.hasProperty('supportLibVersion') ? project.supportLibVersion : DEFAULT_SUPPORT_LIB_VERSION
+    def appcompatVersion = project.hasProperty('appcompatVersion') ? project.appcompatVersion : DEFAULT_APPCOMPAT_VERSION
     implementation fileTree(include: ['*.jar'], dir: 'libs')
-    implementation "com.android.support:appcompat-v7:$supportLibVersion"
+    implementation(platform("org.jetbrains.kotlin:kotlin-bom:1.8.22"))
+    implementation "androidx.appcompat:appcompat:$appcompatVersion"
     implementation files('libs/zltd-n2s-scanner.jar')
     // 智联天地
     implementation files('libs/ScannerAPI.jar')
@@ -44,4 +48,10 @@ dependencies {
     implementation files('libs/platform_sdk_v2.4.0810.jar')
     // 优博讯
     implementation files('libs/SDK_release_v2.1.1.jar')
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
 }

@@ -7,11 +7,12 @@ import android.content.IntentFilter;
 import android.device.ScanDevice;
 import android.os.Handler;
 import android.os.Looper;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 import android.view.KeyEvent;
 
 import com.shipitdone.scanner.manager.ScannerManager;
 import com.shipitdone.scanner.manager.ScannerVariantManager;
+import com.shipitdone.scanner.util.BroadcastUtil;
 
 public class PdaScannerManager implements ScannerManager {
     private Handler handler = new Handler(Looper.getMainLooper());
@@ -109,6 +110,6 @@ public class PdaScannerManager implements ScannerManager {
     private void registerReceiver() {
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(ACTION_DATA_CODE_RECEIVED);
-        mContext.registerReceiver(receiver, intentFilter);
+        BroadcastUtil.registerReceiver(mContext, receiver, intentFilter);
     }
 }

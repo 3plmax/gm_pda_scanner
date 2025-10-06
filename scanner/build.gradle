@@ -35,6 +35,12 @@ android {
         aidl true
     }
 
+    publishing {
+        singleVariant('release') {
+            withSourcesJar()
+            withJavadocJar()
+        }
+    }
 }
 
 dependencies {
@@ -57,14 +63,14 @@ java {
     }
 }
 
-afterEvaluate {
-    publishing {
-        publications {
-            release(MavenPublication) {
-                from components.findByName('release')
-                groupId = 'com.github.3plmax'
-                artifactId = 'scanner-sdk-manager'
-                version = '0.0.1'
+publishing {
+    publications {
+        release(MavenPublication) {
+            groupId = 'com.github.3plmax'
+            artifactId = 'scanner-sdk-manager'
+            version = '0.0.1'
+            afterEvaluate {
+                from components.release
             }
         }
     }

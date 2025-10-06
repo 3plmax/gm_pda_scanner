@@ -1,4 +1,5 @@
 apply plugin: 'com.android.library'
+apply plugin: 'maven-publish'
 
 group='com.github.3plmax'
 
@@ -53,5 +54,18 @@ dependencies {
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+afterEvaluate {
+    publishing {
+        publications {
+            release(MavenPublication) {
+                from components.findByName('release')
+                groupId = 'com.github.3plmax'
+                artifactId = 'scanner-sdk-manager'
+                version = '0.0.1'
+            }
+        }
     }
 }

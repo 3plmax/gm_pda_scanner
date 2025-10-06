@@ -54,14 +54,21 @@ public class UrovoScannerManager implements ScannerManager {
 
     @Override
     public void init() {
+        try {
         mScanManager = new ScanManager();
-        boolean b = mScanManager.openScanner();
-        if (b) {
-            listener.onScannerServiceConnected();
+        if (mScanManager.openScanner()) {
+            if (mScanManager.switchOutputMode(0)) {
+                listener.onScannerServiceConnected();
+            } else {
+                listener.onScannerInitFail();
+            }
         } else {
             listener.onScannerInitFail();
         }
         registerReceiver();
+        } catch (Exception e) {
+            listener.onScannerInitFail();
+        }
     }
 
     @Override
@@ -88,7 +95,11 @@ public class UrovoScannerManager implements ScannerManager {
 
     @Override
     public void scannerEnable(boolean enable) {
-
+        if (enable) {
+            mScanManager.unlockTrigger();
+        } else {
+            mScanManager.lockTrigger()
+        }
     }
 
     @Override

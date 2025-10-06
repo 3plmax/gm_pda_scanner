@@ -98,7 +98,7 @@ public class UrovoScannerManager implements ScannerManager {
         if (enable) {
             mScanManager.unlockTrigger();
         } else {
-            mScanManager.lockTrigger()
+            mScanManager.lockTrigger();
         }
     }
 

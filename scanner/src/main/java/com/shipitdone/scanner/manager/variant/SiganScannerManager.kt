@@ -1,104 +1,84 @@
-package com.shipitdone.scanner.manager.variant;
+package com.shipitdone.scanner.manager.variant
 
-import android.annotation.SuppressLint;
-import android.content.Context;
-import android.os.Handler;
-import android.os.Looper;
-import androidx.annotation.NonNull;
-import android.view.KeyEvent;
+import android.annotation.SuppressLint
+import android.content.Context
+import android.os.Handler
+import android.os.Looper
+import android.os.Message
+import android.view.KeyEvent
+import com.shipitdone.scanner.manager.ScannerManager
+import com.shipitdone.scanner.manager.ScannerVariantManager.ScanListener
+import java.io.IOException
 
-import java.io.IOException;
-
-import com.shipitdone.scanner.manager.ScannerManager;
-import com.shipitdone.scanner.manager.ScannerVariantManager;
-
-public class SiganScannerManager implements ScannerManager {
-    private Context activity;
-    private static SiganScannerManager instance;
-    private ScannerVariantManager.ScanListener listener;
-    private ScanThread scanThread;
+class SiganScannerManager : ScannerManager {
+    private var listener: ScanListener? = null
+    private var scanThread: ScanThread? = null
 
     @SuppressLint("HandlerLeak")
-    private Handler mHandler = new Handler(Looper.getMainLooper()) {
-        public void handleMessage(android.os.Message msg) {
+    private val mHandler: Handler = object : Handler(Looper.getMainLooper()) {
+        override fun handleMessage(msg: Message) {
             if (msg.what == ScanThread.SCAN) {
-                String data = msg.getData().getString("data");
+                val data = msg.data.getString("data")
                 if (data != null && !data.isEmpty()) {
-                    listener.onScannerResultChange(data);
+                    listener!!.onScannerResultChange(data)
                 }
             }
         }
-    };
-
-    private SiganScannerManager(Context activity) {
-        this.activity = activity;
     }
 
-    public static SiganScannerManager getInstance(Context activity) {
-        if (instance == null) {
-            synchronized (SiganScannerManager.class) {
-                if (instance == null) {
-                    instance = new SiganScannerManager(activity);
-                }
-            }
-        }
-        return instance;
-    }
-
-    @Override
-    public void init() {
+    override fun init(context: Context) {
         try {
-            scanThread = new ScanThread(mHandler);
-            listener.onScannerServiceConnected();
-        } catch (IOException e) {
-            listener.onScannerInitFail();
-            return;
+            scanThread = ScanThread(mHandler)
+            listener!!.onScannerServiceConnected()
+        } catch (_: IOException) {
+            listener!!.onScannerInitFail()
+            return
         }
-        scanThread.start();
+        scanThread!!.start()
     }
 
-    @Override
-    public void recycle() {
-        scanThread.close();
+    override fun recycle(context: Context) {
+        scanThread!!.close()
     }
 
-    @Override
-    public void setScannerListener(@NonNull ScannerVariantManager.ScanListener listener) {
-        this.listener = listener;
+    override fun setScannerListener(listener: ScanListener) {
+        this.listener = listener
     }
 
-    @Override
-    public void sendKeyEvent(KeyEvent key) {
-
+    override fun sendKeyEvent(key: KeyEvent?) {
     }
 
-    @Override
-    public int getScannerModel() {
-        return 0;
+    override fun getScannerModel(): Int {
+        return 0
     }
 
-    @Override
-    public void scannerEnable(boolean enable) {
-
+    override fun scannerEnable(context: Context, enable: Boolean) {
     }
 
-    @Override
-    public void setScanMode(String mode) {
-
+    override fun setScanMode(mode: String?) {
     }
 
-    @Override
-    public void setDataTransferType(String type) {
-
+    override fun setDataTransferType(type: String?) {
     }
 
-    @Override
-    public void singleScan(boolean bool) {
-        scanThread.scan();
+    override fun singleScan(context: Context, bool: Boolean) {
+        scanThread!!.scan()
     }
 
-    @Override
-    public void continuousScan(boolean bool) {
+    override fun continuousScan(context: Context, bool: Boolean) {
+    }
 
+    companion object {
+        private var instance: SiganScannerManager? = null
+        fun getInstance(): SiganScannerManager {
+            if (instance == null) {
+                synchronized(SiganScannerManager::class.java) {
+                    if (instance == null) {
+                        instance = SiganScannerManager()
+                    }
+                }
+            }
+            return instance!!
+        }
     }
 }

@@ -1,112 +1,96 @@
-package com.shipitdone.scanner.manager.variant;
+package com.shipitdone.scanner.manager.variant
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.os.Handler;
-import android.os.Looper;
-import androidx.annotation.NonNull;
-import android.text.TextUtils;
-import android.view.KeyEvent;
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.os.Handler
+import android.os.Looper
+import android.text.TextUtils
+import android.view.KeyEvent
+import com.shipitdone.scanner.manager.ScannerManager
+import com.shipitdone.scanner.manager.ScannerVariantManager.ScanListener
+import com.shipitdone.scanner.util.BroadcastUtil.registerReceiver
+import com.shipitdone.scanner.util.LogUtil.printLog
 
-import com.shipitdone.scanner.manager.ScannerManager;
-import com.shipitdone.scanner.util.BroadcastUtil;
-import com.shipitdone.scanner.util.LogUtil;
-import com.shipitdone.scanner.manager.ScannerVariantManager;
+class Kp18ScannerManager : ScannerManager {
+    private val handler = Handler(Looper.getMainLooper())
+    private var listener: ScanListener? = null
 
-public class Kp18ScannerManager implements ScannerManager {
-    private Handler handler = new Handler(Looper.getMainLooper());
-    private Context mContext;
-    private static Kp18ScannerManager instance;
-    private ScannerVariantManager.ScanListener listener;
-
-    private static String ACTION_DATA_CODE_RECEIVED = "com.kte.scan.result";
-    public static String SCAN_RESULT = "code";
-
-    private BroadcastReceiver receiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, final Intent intent) {
-            handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    String result = intent.getStringExtra(SCAN_RESULT);
-                    LogUtil.printLog("[RECV] data=" + result);
+    private val receiver: BroadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent) {
+            handler.post(object : Runnable {
+                override fun run() {
+                    val result = intent.getStringExtra(RESULT_PARAMETER)
+                    printLog("[RECV] data=$result")
                     if (!TextUtils.isEmpty(result)) {
-                        listener.onScannerResultChange(result);
+                        listener!!.onScannerResultChange(result)
                     }
                 }
-            });
+            })
         }
-    };
-
-    private Kp18ScannerManager(Context activity) {
-        this.mContext = activity;
     }
 
-    public static Kp18ScannerManager getInstance(Context activity) {
-        if (instance == null) {
-            synchronized (Kp18ScannerManager.class) {
-                if (instance == null) {
-                    instance = new Kp18ScannerManager(activity);
+    override fun init(context: Context) {
+        val intentFilter = IntentFilter()
+        intentFilter.addAction(ACTION_DATA_RECEIVED)
+        registerReceiver(context, receiver, intentFilter)
+
+        listener!!.onScannerServiceConnected()
+    }
+
+    override fun recycle(context: Context) {
+        context.unregisterReceiver(receiver)
+    }
+
+    override fun setScannerListener(listener: ScanListener) {
+        this.listener = listener
+    }
+
+    override fun sendKeyEvent(key: KeyEvent?) {
+        printLog("[sendKeyEvent] value=$key")
+    }
+
+    override fun getScannerModel(): Int {
+        printLog("[getScannerModel] value=" + 0)
+        return 0
+    }
+
+    override fun scannerEnable(context: Context, enable: Boolean) {
+        printLog("[scannerEnable] value=$enable")
+    }
+
+    override fun setScanMode(mode: String?) {
+        printLog("[setScanMode] value=$mode")
+    }
+
+    override fun setDataTransferType(type: String?) {
+        printLog("[setDataTransferType] value=$type")
+    }
+
+    override fun singleScan(context: Context, bool: Boolean) {
+        printLog("[singleScan] value=$bool")
+    }
+
+    override fun continuousScan(context: Context, bool: Boolean) {
+        printLog("[continuousScan] value=$bool")
+    }
+
+    companion object {
+        private var instance: Kp18ScannerManager? = null
+
+        const val ACTION_DATA_RECEIVED = "com.kte.scan.result"
+        var RESULT_PARAMETER: String = "code"
+
+        fun getInstance(): Kp18ScannerManager {
+            if (instance == null) {
+                synchronized(Kp18ScannerManager::class.java) {
+                    if (instance == null) {
+                        instance = Kp18ScannerManager()
+                    }
                 }
             }
+            return instance!!
         }
-        return instance;
-    }
-
-    @Override
-    public void init() {
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(ACTION_DATA_CODE_RECEIVED);
-        BroadcastUtil.registerReceiver(mContext, receiver, intentFilter);
-
-        listener.onScannerServiceConnected();
-    }
-
-    @Override
-    public void recycle() {
-        mContext.unregisterReceiver(receiver);
-    }
-
-    @Override
-    public void setScannerListener(@NonNull ScannerVariantManager.ScanListener listener) {
-        this.listener = listener;
-    }
-
-    @Override
-    public void sendKeyEvent(KeyEvent key) {
-        LogUtil.printLog("[sendKeyEvent] value=" + key);
-    }
-
-    @Override
-    public int getScannerModel() {
-        LogUtil.printLog("[getScannerModel] value=" + 0);
-        return 0;
-    }
-
-    @Override
-    public void scannerEnable(boolean enable) {
-        LogUtil.printLog("[scannerEnable] value=" + enable);
-    }
-
-    @Override
-    public void setScanMode(String mode) {
-        LogUtil.printLog("[setScanMode] value=" + mode);
-    }
-
-    @Override
-    public void setDataTransferType(String type) {
-        LogUtil.printLog("[setDataTransferType] value=" + type);
-    }
-
-    @Override
-    public void singleScan(boolean bool) {
-        LogUtil.printLog("[singleScan] value=" + bool);
-    }
-
-    @Override
-    public void continuousScan(boolean bool) {
-        LogUtil.printLog("[continuousScan] value=" + bool);
     }
 }

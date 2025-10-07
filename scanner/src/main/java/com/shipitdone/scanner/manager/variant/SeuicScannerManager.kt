@@ -1,140 +1,114 @@
-package com.shipitdone.scanner.manager.variant;
+package com.shipitdone.scanner.manager.variant
 
-import android.content.Context;
-import android.os.Handler;
-import android.os.Looper;
-import androidx.annotation.NonNull;
-import android.view.KeyEvent;
+import android.content.Context
+import android.os.Handler
+import android.os.Looper
+import android.view.KeyEvent
+import com.seuic.scanner.DecodeInfo
+import com.seuic.scanner.DecodeInfoCallBack
+import com.seuic.scanner.Scanner
+import com.seuic.scanner.ScannerFactory
+import com.seuic.scanner.ScannerKey
+import com.shipitdone.scanner.manager.ScannerManager
+import com.shipitdone.scanner.manager.ScannerVariantManager.ScanListener
 
-import com.seuic.scanner.DecodeInfo;
-import com.seuic.scanner.DecodeInfoCallBack;
-import com.seuic.scanner.Scanner;
-import com.seuic.scanner.ScannerFactory;
-import com.seuic.scanner.ScannerKey;
-import com.shipitdone.scanner.manager.ScannerManager;
-import com.shipitdone.scanner.manager.ScannerVariantManager;
+class SeuicScannerManager : ScannerManager {
+    private val handler = Handler(Looper.getMainLooper())
+    private var mScanner: Scanner? = null
+    private var listener: ScanListener? = null
 
-public class SeuicScannerManager implements ScannerManager {
-    private Handler handler = new Handler(Looper.getMainLooper());
-    private Context activity;
-    private static SeuicScannerManager instance;
-    private Scanner mScanner;
-    private ScannerVariantManager.ScanListener listener;
-
-    private DecodeInfoCallBack mDecodeInfoCallBack = new DecodeInfoCallBack() {
-        @Override
-        public void onDecodeComplete(final DecodeInfo decodeInfo) {
-            handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    String s = decodeInfo.barcode;
+    private val mDecodeInfoCallBack: DecodeInfoCallBack = object : DecodeInfoCallBack {
+        override fun onDecodeComplete(decodeInfo: DecodeInfo) {
+            handler.post(object : Runnable {
+                override fun run() {
+                    val s = decodeInfo.barcode
                     if (s != null) {
-                        listener.onScannerResultChange(s);
+                        listener!!.onScannerResultChange(s)
                     }
                 }
-            });
+            })
         }
-    };
-
-    private SeuicScannerManager(Context activity) {
-        this.activity = activity;
     }
 
-    public static SeuicScannerManager getInstance(Context activity) {
-        if (instance == null) {
-            synchronized (SeuicScannerManager.class) {
-                if (instance == null) {
-                    instance = new SeuicScannerManager(activity);
-                }
-            }
-        }
-        return instance;
-    }
-
-    @Override
-    public void init() {
-        mScanner = ScannerFactory.getScanner(activity);
-        boolean isOpen = mScanner.open();
+    override fun init(context: Context) {
+        mScanner = ScannerFactory.getScanner(context)
+        val isOpen = mScanner!!.open()
         if (isOpen) {
-            listener.onScannerServiceConnected();
+            listener!!.onScannerServiceConnected()
         } else {
-            listener.onScannerInitFail();
+            listener!!.onScannerInitFail()
         }
-        mScanner.setDecodeInfoCallBack(mDecodeInfoCallBack);
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                int ret1 = ScannerKey.open();
+        mScanner!!.setDecodeInfoCallBack(mDecodeInfoCallBack)
+        Thread(object : Runnable {
+            override fun run() {
+                val ret1 = ScannerKey.open()
                 if (ret1 > -1) {
                     while (true) {
-                        int ret = ScannerKey.getKeyEvent();
+                        val ret = ScannerKey.getKeyEvent()
                         if (ret > -1) {
-                            switch (ret) {
-                                case ScannerKey.KEY_DOWN:
-                                    mScanner.startScan();
-                                    break;
-                                case ScannerKey.KEY_UP:
-                                    mScanner.stopScan();
-                                    break;
+                            when (ret) {
+                                ScannerKey.KEY_DOWN -> mScanner!!.startScan()
+                                ScannerKey.KEY_UP -> mScanner!!.stopScan()
                             }
                         }
                     }
                 }
             }
-        }).start();
+        }).start()
     }
 
-    @Override
-    public void recycle() {
-        mScanner.close();
-        ScannerKey.close();
+    override fun recycle(context: Context) {
+        mScanner!!.close()
+        ScannerKey.close()
     }
 
-    @Override
-    public void setScannerListener(@NonNull ScannerVariantManager.ScanListener listener) {
-        this.listener = listener;
+    override fun setScannerListener(listener: ScanListener) {
+        this.listener = listener
     }
 
-    @Override
-    public void sendKeyEvent(KeyEvent key) {
-
+    override fun sendKeyEvent(key: KeyEvent?) {
     }
 
-    @Override
-    public int getScannerModel() {
-        return 0;
+    override fun getScannerModel(): Int {
+        return 0
     }
 
-    @Override
-    public void scannerEnable(boolean enable) {
+    override fun scannerEnable(context: Context, enable: Boolean) {
         if (enable) {
-            mScanner.enable();
+            mScanner!!.enable()
         } else {
-            mScanner.disable();
+            mScanner!!.disable()
         }
     }
 
-    @Override
-    public void setScanMode(String mode) {
-
+    override fun setScanMode(mode: String?) {
     }
 
-    @Override
-    public void setDataTransferType(String type) {
-
+    override fun setDataTransferType(type: String?) {
     }
 
-    @Override
-    public void singleScan(boolean bool) {
+    override fun singleScan(context: Context, bool: Boolean) {
         if (bool) {
-            mScanner.startScan();
+            mScanner!!.startScan()
         } else {
-            mScanner.stopScan();
+            mScanner!!.stopScan()
         }
     }
 
-    @Override
-    public void continuousScan(boolean bool) {
+    override fun continuousScan(context: Context, bool: Boolean) {
+    }
 
+    companion object {
+        private var instance: SeuicScannerManager? = null
+        fun getInstance(): SeuicScannerManager {
+            if (instance == null) {
+                synchronized(SeuicScannerManager::class.java) {
+                    if (instance == null) {
+                        instance = SeuicScannerManager()
+                    }
+                }
+            }
+            return instance!!
+        }
     }
 }

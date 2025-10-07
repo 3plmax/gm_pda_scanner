@@ -1,134 +1,115 @@
-package com.shipitdone.scanner.manager.variant;
+package com.shipitdone.scanner.manager.variant
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.device.ScanManager;
-import android.os.Handler;
-import android.os.Looper;
-import androidx.annotation.NonNull;
-import android.view.KeyEvent;
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.device.ScanManager
+import android.os.Handler
+import android.os.Looper
+import android.view.KeyEvent
+import com.shipitdone.scanner.manager.ScannerManager
+import com.shipitdone.scanner.manager.ScannerVariantManager.ScanListener
+import com.shipitdone.scanner.util.BroadcastUtil.registerReceiver
 
-import com.shipitdone.scanner.manager.ScannerManager;
-import com.shipitdone.scanner.manager.ScannerVariantManager;
-import com.shipitdone.scanner.util.BroadcastUtil;
+class UrovoScannerManager : ScannerManager {
+    private val handler = Handler(Looper.getMainLooper())
+    private var listener: ScanListener? = null
 
-public class UrovoScannerManager implements ScannerManager {
-    private Handler handler = new Handler(Looper.getMainLooper());
-    private Context activity;
-    private static UrovoScannerManager instance;
-    public static final String ACTION_DATA_CODE_RECEIVED = "android.intent.ACTION_DECODE_DATA";
-    private ScannerVariantManager.ScanListener listener;
-
-    private BroadcastReceiver receiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, final Intent intent) {
-            handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    String code = intent.getStringExtra(ScanManager.BARCODE_STRING_TAG);
+    private val receiver: BroadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent) {
+            handler.post(object : Runnable {
+                override fun run() {
+                    val code = intent.getStringExtra(ScanManager.BARCODE_STRING_TAG)
                     if (code != null && !code.isEmpty()) {
-                        listener.onScannerResultChange(code);
+                        listener!!.onScannerResultChange(code)
                     }
                 }
-            });
+            })
         }
-    };
-    private ScanManager mScanManager;
+    }
+    private var mScanManager: ScanManager? = null
 
-    private UrovoScannerManager(Context activity) {
-        this.activity = activity;
+    override fun init(context: Context) {
+        try {
+            mScanManager = ScanManager()
+            if (mScanManager!!.openScanner()) {
+                if (mScanManager!!.switchOutputMode(0)) {
+                    listener!!.onScannerServiceConnected()
+                } else {
+                    listener!!.onScannerInitFail()
+                }
+            } else {
+                listener!!.onScannerInitFail()
+            }
+            registerReceiver(context)
+        } catch (e: Exception) {
+            listener!!.onScannerInitFail()
+        }
     }
 
-    public static UrovoScannerManager getInstance(Context activity) {
-        if (instance == null) {
-            synchronized (UrovoScannerManager.class) {
-                if (instance == null) {
-                    instance = new UrovoScannerManager(activity);
+    private fun registerReceiver(context: Context) {
+        val intentFilter = IntentFilter()
+        intentFilter.addAction(ACTION_DATA_RECEIVED)
+        registerReceiver(context, receiver, intentFilter)
+    }
+
+    override fun recycle(context: Context) {
+        mScanManager!!.closeScanner()
+        context.unregisterReceiver(receiver)
+        this.listener = null
+    }
+
+    override fun setScannerListener(listener: ScanListener) {
+        this.listener = listener
+    }
+
+    override fun sendKeyEvent(key: KeyEvent?) {
+    }
+
+    override fun getScannerModel(): Int {
+        return 0
+    }
+
+    override fun scannerEnable(context: Context, enable: Boolean) {
+        if (enable) {
+            mScanManager!!.unlockTrigger()
+        } else {
+            mScanManager!!.lockTrigger()
+        }
+    }
+
+    override fun setScanMode(mode: String?) {
+    }
+
+    override fun setDataTransferType(type: String?) {
+    }
+
+    override fun singleScan(context: Context, bool: Boolean) {
+        if (bool) {
+            mScanManager!!.startDecode()
+        } else {
+            mScanManager!!.stopDecode()
+        }
+    }
+
+    override fun continuousScan(context: Context, bool: Boolean) {
+    }
+
+    companion object {
+        private var instance: UrovoScannerManager? = null
+
+        const val ACTION_DATA_RECEIVED: String = "android.intent.ACTION_DECODE_DATA"
+
+        fun getInstance(): UrovoScannerManager {
+            if (instance == null) {
+                synchronized(UrovoScannerManager::class.java) {
+                    if (instance == null) {
+                        instance = UrovoScannerManager()
+                    }
                 }
             }
+            return instance!!
         }
-        return instance;
-    }
-
-    @Override
-    public void init() {
-        try {
-        mScanManager = new ScanManager();
-        if (mScanManager.openScanner()) {
-            if (mScanManager.switchOutputMode(0)) {
-                listener.onScannerServiceConnected();
-            } else {
-                listener.onScannerInitFail();
-            }
-        } else {
-            listener.onScannerInitFail();
-        }
-        registerReceiver();
-        } catch (Exception e) {
-            listener.onScannerInitFail();
-        }
-    }
-
-    @Override
-    public void recycle() {
-        mScanManager.closeScanner();
-        activity.unregisterReceiver(receiver);
-        this.listener = null;
-    }
-
-    @Override
-    public void setScannerListener(@NonNull ScannerVariantManager.ScanListener listener) {
-        this.listener = listener;
-    }
-
-    @Override
-    public void sendKeyEvent(KeyEvent key) {
-
-    }
-
-    @Override
-    public int getScannerModel() {
-        return 0;
-    }
-
-    @Override
-    public void scannerEnable(boolean enable) {
-        if (enable) {
-            mScanManager.unlockTrigger();
-        } else {
-            mScanManager.lockTrigger();
-        }
-    }
-
-    @Override
-    public void setScanMode(String mode) {
-
-    }
-
-    @Override
-    public void setDataTransferType(String type) {
-
-    }
-
-    @Override
-    public void singleScan(boolean bool) {
-        if (bool) {
-            mScanManager.startDecode();
-        } else {
-            mScanManager.stopDecode();
-        }
-    }
-
-    @Override
-    public void continuousScan(boolean bool) {
-
-    }
-
-    private void registerReceiver() {
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(ACTION_DATA_CODE_RECEIVED);
-        BroadcastUtil.registerReceiver(activity, receiver, intentFilter);
     }
 }

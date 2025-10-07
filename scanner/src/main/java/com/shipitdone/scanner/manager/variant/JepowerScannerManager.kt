@@ -1,102 +1,82 @@
-package com.shipitdone.scanner.manager.variant;
+package com.shipitdone.scanner.manager.variant
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import androidx.annotation.NonNull;
-import android.view.KeyEvent;
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.device.ScanManager
+import android.view.KeyEvent
+import com.shipitdone.scanner.manager.ScannerManager
+import com.shipitdone.scanner.manager.ScannerVariantManager.ScanListener
+import com.shipitdone.scanner.util.BroadcastUtil.registerReceiver
 
-import com.shipitdone.scanner.manager.ScannerManager;
-import com.shipitdone.scanner.manager.ScannerVariantManager;
-import com.shipitdone.scanner.util.BroadcastUtil;
+class JepowerScannerManager : ScannerManager {
+    private var listener: ScanListener? = null
 
-public class JepowerScannerManager implements ScannerManager {
-    private static JepowerScannerManager instance;
-    private Context activity;
-    public static final String ACTION_DATA_CODE_RECEIVED = "com.android.server.scannerservice.broadcast";
-    private static final String DATA = "scannerdata";
-    private ScannerVariantManager.ScanListener listener;
-
-    private BroadcastReceiver receiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String code = intent.getStringExtra(DATA);
+    private val receiver: BroadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent) {
+            val code = intent.getStringExtra(RESULT_PARAMETER)
             if (code != null && !code.isEmpty()) {
-                listener.onScannerResultChange(code);
+                listener!!.onScannerResultChange(code)
             }
         }
-    };
-
-    private JepowerScannerManager(Context activity) {
-        this.activity = activity;
     }
 
-    public static JepowerScannerManager getInstance(Context activity) {
-        if (instance == null) {
-            synchronized (JepowerScannerManager.class) {
-                if (instance == null) {
-                    instance = new JepowerScannerManager(activity);
+    override fun init(context: Context) {
+        registerReceiver(context)
+        listener!!.onScannerServiceConnected()
+    }
+
+    private fun registerReceiver(context: Context) {
+        val intentFilter = IntentFilter()
+        intentFilter.addAction(ACTION_DATA_RECEIVED)
+        registerReceiver(context, receiver, intentFilter)
+    }
+
+    override fun recycle(context: Context) {
+    }
+
+    override fun setScannerListener(listener: ScanListener) {
+        this.listener = listener
+    }
+
+    override fun sendKeyEvent(key: KeyEvent?) {
+    }
+
+    override fun getScannerModel(): Int {
+        return 0
+    }
+
+    override fun scannerEnable(context: Context, enable: Boolean) {
+    }
+
+    override fun setScanMode(mode: String?) {
+    }
+
+    override fun setDataTransferType(type: String?) {
+    }
+
+    override fun singleScan(context: Context, bool: Boolean) {
+    }
+
+    override fun continuousScan(context: Context, bool: Boolean) {
+    }
+
+    companion object {
+        private var instance: JepowerScannerManager? = null
+
+        val ACTION_DATA_RECEIVED: String? = ScanManager.ACTION_DECODE
+        val RESULT_PARAMETER: String? = ScanManager.BARCODE_STRING_TAG
+
+        fun getInstance(): JepowerScannerManager {
+            if (instance == null) {
+                synchronized(JepowerScannerManager::class.java) {
+                    if (instance == null) {
+                        instance = JepowerScannerManager()
+                    }
                 }
             }
+            return instance!!
         }
-        return instance;
-    }
-
-    @Override
-    public void init() {
-        registerReceiver();
-        listener.onScannerServiceConnected();
-    }
-
-    @Override
-    public void recycle() {
-
-    }
-
-    @Override
-    public void setScannerListener(@NonNull ScannerVariantManager.ScanListener listener) {
-        this.listener = listener;
-    }
-
-    @Override
-    public void sendKeyEvent(KeyEvent key) {
-
-    }
-
-    @Override
-    public int getScannerModel() {
-        return 0;
-    }
-
-    @Override
-    public void scannerEnable(boolean enable) {
-
-    }
-
-    @Override
-    public void setScanMode(String mode) {
-
-    }
-
-    @Override
-    public void setDataTransferType(String type) {
-
-    }
-
-    @Override
-    public void singleScan(boolean bool) {
-
-    }
-
-    @Override
-    public void continuousScan(boolean bool) {
-
-    }
-
-    private void registerReceiver() {
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(ACTION_DATA_CODE_RECEIVED);
-        BroadcastUtil.registerReceiver(activity, receiver, intentFilter);
     }
 }

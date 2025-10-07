@@ -1,137 +1,126 @@
-package com.shipitdone.scanner.manager.variant;
+package com.shipitdone.scanner.manager.variant
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.device.ScanManager;
-import android.device.scanner.configuration.PropertyID;
-import android.os.Handler;
-import android.os.Looper;
-import androidx.annotation.NonNull;
-import android.text.TextUtils;
-import android.view.KeyEvent;
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.device.ScanManager
+import android.device.scanner.configuration.PropertyID
+import android.os.Handler
+import android.os.Looper
+import android.text.TextUtils
+import android.view.KeyEvent
+import com.shipitdone.scanner.manager.ScannerManager
+import com.shipitdone.scanner.manager.ScannerVariantManager.ScanListener
+import com.shipitdone.scanner.util.BroadcastUtil.registerReceiver
+import com.shipitdone.scanner.util.LogUtil.printLog
 
-import com.shipitdone.scanner.manager.ScannerManager;
-import com.shipitdone.scanner.util.BroadcastUtil;
-import com.shipitdone.scanner.util.LogUtil;
-import com.shipitdone.scanner.manager.ScannerVariantManager;
+class Ct58ScannerManager : ScannerManager {
+    private val handler = Handler(Looper.getMainLooper())
+    private var listener: ScanListener? = null
 
-public class Ct58ScannerManager implements ScannerManager {
-    private Handler handler = new Handler(Looper.getMainLooper());
-    private Context mContext;
-    private static Ct58ScannerManager instance;
-    private ScannerVariantManager.ScanListener listener;
+    var mScanManager: ScanManager = ScanManager()
 
-    private static String ACTION_DATA_CODE_RECEIVED = ScanManager.ACTION_DECODE;
-    public static String SCAN_RESULT = ScanManager.BARCODE_STRING_TAG;
-
-    ScanManager mScanManager = new ScanManager();
-
-    private BroadcastReceiver receiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, final Intent intent) {
-            handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    String result = intent.getStringExtra(SCAN_RESULT);
-                    LogUtil.printLog("[RECV] data=" + result);
+    private val receiver: BroadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent) {
+            handler.post(object : Runnable {
+                override fun run() {
+                    val result = intent.getStringExtra(RESULT_PARAMETER)
+                    printLog("[RECV] data=$result")
                     if (!TextUtils.isEmpty(result)) {
-                        listener.onScannerResultChange(result);
+                        listener!!.onScannerResultChange(result)
                     }
                 }
-            });
+            })
         }
-    };
-
-    private Ct58ScannerManager(Context activity) {
-        this.mContext = activity;
     }
 
-    public static Ct58ScannerManager getInstance(Context activity) {
-        if (instance == null) {
-            synchronized (Ct58ScannerManager.class) {
-                if (instance == null) {
-                    instance = new Ct58ScannerManager(activity);
+    override fun init(context: Context) {
+        //设置扫描模式
+        mScanManager.switchOutputMode(0)
+        //设置扫描参数
+        val params = mScanManager.getParameterString(
+            intArrayOf(
+                PropertyID.WEDGE_INTENT_ACTION_NAME,
+                PropertyID.WEDGE_INTENT_DATA_STRING_TAG
+            )
+        )
+        if (params != null && params.size == 2) {
+            ACTION_DATA_RECEIVED = params[0]
+            RESULT_PARAMETER = params[1]
+        }
+
+        if (TextUtils.isEmpty(ACTION_DATA_RECEIVED)) {
+            ACTION_DATA_RECEIVED = ScanManager.ACTION_DECODE
+        }
+        if (TextUtils.isEmpty(RESULT_PARAMETER)) {
+            RESULT_PARAMETER = ScanManager.BARCODE_STRING_TAG
+        }
+
+        val intentFilter = IntentFilter()
+        intentFilter.addAction(ACTION_DATA_RECEIVED)
+        registerReceiver(context, receiver, intentFilter)
+
+        listener!!.onScannerServiceConnected()
+    }
+
+    override fun recycle(context: Context) {
+        context.unregisterReceiver(receiver)
+    }
+
+    override fun setScannerListener(listener: ScanListener) {
+        this.listener = listener
+    }
+
+    override fun sendKeyEvent(key: KeyEvent?) {
+        printLog("[sendKeyEvent] value=$key")
+    }
+
+    override fun getScannerModel(): Int {
+        printLog("[getScannerModel] value=" + 0)
+        return 0
+    }
+
+    override fun scannerEnable(context: Context, enable: Boolean) {
+        printLog("[scannerEnable] value=$enable")
+    }
+
+    override fun setScanMode(mode: String?) {
+        printLog("[setScanMode] value=$mode")
+    }
+
+    override fun setDataTransferType(type: String?) {
+        printLog("[setDataTransferType] value=$type")
+    }
+
+    override fun singleScan(context: Context, bool: Boolean) {
+        printLog("[singleScan] value=$bool")
+        if (bool) {
+            mScanManager.startDecode()
+        } else {
+            mScanManager.stopDecode()
+        }
+    }
+
+    override fun continuousScan(context: Context, bool: Boolean) {
+        printLog("[continuousScan] value=$bool")
+    }
+
+    companion object {
+        private var instance: Ct58ScannerManager? = null
+
+        var ACTION_DATA_RECEIVED: String? = ScanManager.ACTION_DECODE
+        var RESULT_PARAMETER: String? = ScanManager.BARCODE_STRING_TAG
+
+        fun getInstance(): Ct58ScannerManager {
+            if (instance == null) {
+                synchronized(Ct58ScannerManager::class.java) {
+                    if (instance == null) {
+                        instance = Ct58ScannerManager()
+                    }
                 }
             }
+            return instance!!
         }
-        return instance;
-    }
-
-    @Override
-    public void init() {
-        //设置扫描模式
-        mScanManager.switchOutputMode(0);
-        //设置扫描参数
-        String[] params = mScanManager.getParameterString(new int[]{PropertyID.WEDGE_INTENT_ACTION_NAME, PropertyID.WEDGE_INTENT_DATA_STRING_TAG});
-        if (params != null && params.length == 2) {
-            ACTION_DATA_CODE_RECEIVED = params[0];
-            SCAN_RESULT = params[1];
-        }
-
-        if (TextUtils.isEmpty(ACTION_DATA_CODE_RECEIVED)) {
-            ACTION_DATA_CODE_RECEIVED = ScanManager.ACTION_DECODE;
-        }
-        if (TextUtils.isEmpty(SCAN_RESULT)) {
-            SCAN_RESULT = ScanManager.BARCODE_STRING_TAG;
-        }
-
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(ACTION_DATA_CODE_RECEIVED);
-        BroadcastUtil.registerReceiver(mContext, receiver, intentFilter);
-
-        listener.onScannerServiceConnected();
-    }
-
-    @Override
-    public void recycle() {
-        mContext.unregisterReceiver(receiver);
-    }
-
-    @Override
-    public void setScannerListener(@NonNull ScannerVariantManager.ScanListener listener) {
-        this.listener = listener;
-    }
-
-    @Override
-    public void sendKeyEvent(KeyEvent key) {
-        LogUtil.printLog("[sendKeyEvent] value=" + key);
-    }
-
-    @Override
-    public int getScannerModel() {
-        LogUtil.printLog("[getScannerModel] value=" + 0);
-        return 0;
-    }
-
-    @Override
-    public void scannerEnable(boolean enable) {
-        LogUtil.printLog("[scannerEnable] value=" + enable);
-    }
-
-    @Override
-    public void setScanMode(String mode) {
-        LogUtil.printLog("[setScanMode] value=" + mode);
-    }
-
-    @Override
-    public void setDataTransferType(String type) {
-        LogUtil.printLog("[setDataTransferType] value=" + type);
-    }
-
-    @Override
-    public void singleScan(boolean bool) {
-        LogUtil.printLog("[singleScan] value=" + bool);
-        if (bool) {
-            mScanManager.startDecode();
-        } else {
-            mScanManager.stopDecode();
-        }
-    }
-
-    @Override
-    public void continuousScan(boolean bool) {
-        LogUtil.printLog("[continuousScan] value=" + bool);
     }
 }

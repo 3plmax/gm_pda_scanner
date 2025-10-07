@@ -1,26 +1,27 @@
-package com.shipitdone.scanner.manager;
+package com.shipitdone.scanner.manager
 
-import androidx.annotation.NonNull;
-import android.view.KeyEvent;
+import android.view.KeyEvent
+import android.content.Context
+import com.shipitdone.scanner.manager.ScannerVariantManager.ScanListener
 
-public interface ScannerManager {
-    void init();
+interface ScannerManager {
+    fun init(context: Context)
 
-    void recycle();
+    fun recycle(context: Context)
 
-    void setScannerListener(@NonNull ScannerVariantManager.ScanListener listener);
+    fun setScannerListener(listener: ScanListener)
 
-    void sendKeyEvent(KeyEvent key);
+    fun sendKeyEvent(key: KeyEvent?)
 
-    int getScannerModel();
+    fun scannerEnable(context: Context, enable: Boolean)
 
-    void scannerEnable(boolean enable);
+    fun setScanMode(mode: String?)
 
-    void setScanMode(String mode);
+    fun setDataTransferType(type: String?)
 
-    void setDataTransferType(String type);
+    fun singleScan(context: Context, bool: Boolean)
 
-    void singleScan(boolean bool);
+    fun continuousScan(context: Context, bool: Boolean)
 
-    void continuousScan(boolean bool);
+    fun getScannerModel(): Int
 }

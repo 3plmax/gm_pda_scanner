@@ -1,122 +1,90 @@
-package com.shipitdone.scanner.manager.variant;
+package com.shipitdone.scanner.manager.variant
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.os.Handler;
-import android.os.Looper;
-import androidx.annotation.NonNull;
-import android.text.TextUtils;
-import android.view.KeyEvent;
-import android.widget.Toast;
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.os.Handler
+import android.os.Looper
+import android.text.TextUtils
+import android.view.KeyEvent
+import android.widget.Toast
+import com.shipitdone.scanner.manager.ScannerManager
+import com.shipitdone.scanner.manager.ScannerVariantManager.ScanListener
+import com.shipitdone.scanner.util.BroadcastUtil.registerReceiver
 
-import com.shipitdone.scanner.manager.ScannerManager;
-import com.shipitdone.scanner.manager.ScannerVariantManager;
-import com.shipitdone.scanner.util.BroadcastUtil;
+class OtherScannerManager : ScannerManager {
+    private val handler = Handler(Looper.getMainLooper())
+    private var listener: ScanListener? = null
 
-public class OtherScannerManager implements ScannerManager {
-    private Handler handler = new Handler(Looper.getMainLooper());
-    private Context mContext;
-    private ScannerVariantManager.ScanListener listener;
-
-
-    private static final String START_SCAN_TRIGGER = "cn.guanmai.scanner.START";
-    private static final String STOP_SCAN_TRIGGER = "cn.guanmai.scanner.STOP";
-    private static final String DATA_RECEIVED_ACTION = "cn.guanmai.scanner.data";
-    public static final String SCAN_RESULT = "string";
-
-    private BroadcastReceiver receiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, final Intent intent) {
-            handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    String result = intent.getStringExtra(SCAN_RESULT);
+    private val receiver: BroadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent) {
+            handler.post(object : Runnable {
+                override fun run() {
+                    val result = intent.getStringExtra(RESULT_PARAMETER)
                     if (!TextUtils.isEmpty(result)) {
-                        listener.onScannerResultChange(result);
+                        listener!!.onScannerResultChange(result)
                     }
                 }
-            });
+            })
         }
-    };
-
-    public OtherScannerManager(Context context) {
-        this.mContext = context;
     }
 
-    @Override
-    public void init() {
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(DATA_RECEIVED_ACTION);
-        // if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-        //     mContext.registerReceiver(receiver, intentFilter, Context.RECEIVER_EXPORTED);
-        // } else {
-        //     BroadcastUtil.registerReceiver(mContext, receiver, intentFilter);
-        // }
-        BroadcastUtil.registerReceiver(mContext, receiver, intentFilter);
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                Toast.makeText(mContext, "匹配默认配置", Toast.LENGTH_SHORT).show();
-                handler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        listener.onScannerServiceConnected();
+    override fun init(context: Context) {
+        val intentFilter = IntentFilter()
+        intentFilter.addAction(ACTION_DATA_RECEIVED)
+        registerReceiver(context, receiver, intentFilter)
+        handler.post(object : Runnable {
+            override fun run() {
+                Toast.makeText(context, "匹配默认配置", Toast.LENGTH_SHORT).show()
+                handler.postDelayed(object : Runnable {
+                    override fun run() {
+                        listener!!.onScannerServiceConnected()
                     }
-                }, 800);
+                }, 800)
             }
-        });
+        })
     }
 
-    @Override
-    public void recycle() {
-        mContext.unregisterReceiver(receiver);
+    override fun recycle(context: Context) {
+        context.unregisterReceiver(receiver)
     }
 
-    @Override
-    public void setScannerListener(@NonNull ScannerVariantManager.ScanListener listener) {
-        this.listener = listener;
+    override fun setScannerListener(listener: ScanListener) {
+        this.listener = listener
     }
 
-    @Override
-    public void sendKeyEvent(KeyEvent key) {
-
+    override fun sendKeyEvent(key: KeyEvent?) {
     }
 
-    @Override
-    public int getScannerModel() {
-        return 0;
+    override fun getScannerModel(): Int {
+        return 0
     }
 
-    @Override
-    public void scannerEnable(boolean enable) {
-
+    override fun scannerEnable(context: Context, enable: Boolean) {
     }
 
-    @Override
-    public void setScanMode(String mode) {
-
+    override fun setScanMode(mode: String?) {
     }
 
-    @Override
-    public void setDataTransferType(String type) {
-
+    override fun setDataTransferType(type: String?) {
     }
 
-    @Override
-    public void singleScan(boolean bool) {
-        if (mContext != null) {
-            if (bool) {
-                mContext.sendBroadcast(new Intent(START_SCAN_TRIGGER));
-            } else {
-                mContext.sendBroadcast(new Intent(STOP_SCAN_TRIGGER));
-            }
+    override fun singleScan(context: Context, bool: Boolean) {
+        if (bool) {
+            context.sendBroadcast(Intent(ACTION_START))
+        } else {
+            context.sendBroadcast(Intent(ACTION_STOP))
         }
     }
 
-    @Override
-    public void continuousScan(boolean bool) {
+    override fun continuousScan(context: Context, bool: Boolean) {
+    }
 
+    companion object {
+        const val ACTION_START = "com.shipitdone.scanner.START"
+        const val ACTION_STOP = "com.shipitdone.scanner.STOP"
+        const val ACTION_DATA_RECEIVED = "com.shipitdone.scanner.data"
+        const val RESULT_PARAMETER: String = "string"
     }
 }

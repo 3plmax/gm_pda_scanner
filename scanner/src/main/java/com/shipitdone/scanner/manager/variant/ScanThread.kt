@@ -1,116 +1,107 @@
-package com.shipitdone.scanner.manager.variant;
+package com.shipitdone.scanner.manager.variant
 
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
+import android.os.Bundle
+import android.os.Handler
+import android.os.Message
+import com.pda.serialport.SerialPort
+import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+class ScanThread(private val handler: Handler) : Thread() {
+    private val mSerialPort: SerialPort?
+    private val `is`: InputStream?
+    private val os: OutputStream?
 
-import com.pda.serialport.SerialPort;
+    /* serial port parameter */
+    private val port = 0
+    private val baudRate = 9600
+    private val flags = 0
 
-public class ScanThread extends Thread {
+    /**
+     * if throw exception, serial port initialize fail.
+     *
+     * @throws SecurityException
+     * @throws IOException
+     */
+    init {
+        mSerialPort = SerialPort(port, baudRate, flags)
+        mSerialPort.scaner_poweron()
+        `is` = mSerialPort.inputStream
+        os = mSerialPort.outputStream
+        try {
+            sleep(500)
+        } catch (e: InterruptedException) {
+            // TODO Auto-generated catch block
+            e.printStackTrace()
+        }
+        /** clear useless data  */
+        val temp = ByteArray(128)
+        `is`.read(temp)
+    }
 
-	private SerialPort mSerialPort;
-	private InputStream is;
-	private OutputStream os;
-	/* serialport parameter */
-	private int port = 0;
-	private int baudrate = 9600;
-	private int flags = 0;
+    override fun run() {
+        try {
+            var size = 0
+            val buffer = ByteArray(2048)
+            var available = 0
+            while (!isInterrupted) {
+                available = `is`!!.available()
+                if (available > 0) {
+                    size = `is`.read(buffer)
+                    if (size > 0) {
+                        sendMessage(buffer, size, SCAN)
+                    }
+                }
+            }
+        } catch (e: IOException) {
+            // 返回错误信息
+            e.printStackTrace()
+        }
+        super.run()
+    }
 
-	private Handler handler;
+    private fun sendMessage(data: ByteArray?, dataLen: Int, mode: Int) {
+        try {
+            val dataStr = String(data!!, 0, dataLen)
+            val bundle = Bundle()
+            bundle.putString("data", dataStr)
+            val msg = Message()
+            msg.what = mode
+            msg.data = bundle
+            handler.sendMessage(msg)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 
-	public static int SCAN = 1001; // messege recv mode
+    fun scan() {
+        if (mSerialPort!!.scaner_trig_stat() == true) {
+            mSerialPort.scaner_trigoff()
+            try {
+                sleep(50)
+            } catch (e: InterruptedException) {
+                // TODO Auto-generated catch block
+                e.printStackTrace()
+            }
+        }
+        mSerialPort.scaner_trigon()
+    }
 
-	/**
-	 * if throw exception, serialport initialize fail.
-	 *
-	 * @throws SecurityException
-	 * @throws IOException
-	 */
-	public ScanThread(Handler handler) throws SecurityException, IOException {
-		this.handler = handler;
-		mSerialPort = new SerialPort(port, baudrate, flags);
-		mSerialPort.scaner_poweron();
-		is = mSerialPort.getInputStream();
-		os = mSerialPort.getOutputStream();
-		try {
-			Thread.sleep(500);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		/** clear useless data **/
-		byte[] temp = new byte[128];
-		is.read(temp);
-	}
+    fun close() {
+        if (mSerialPort != null) {
+            mSerialPort.scaner_poweroff()
+            try {
+                `is`?.close()
+                os?.close()
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+            mSerialPort.close(port)
+        }
+    }
 
-	@Override
-	public void run() {
-		try {
-			int size = 0;
-			byte[] buffer = new byte[2048];
-			int available = 0;
-			while (!isInterrupted()) {
-				available = is.available();
-				if (available > 0) {
-					size = is.read(buffer);
-					if (size > 0) {
-						sendMessege(buffer, size, SCAN);
-					}
-				}
-			}
-		} catch (IOException e) {
-			// 返回错误信息
-			e.printStackTrace();
-		}
-		super.run();
-	}
-
-	private void sendMessege(byte[] data, int dataLen, int mode) {
-		try {
-			String dataStr = new String(data, 0, dataLen);
-			Bundle bundle = new Bundle();
-			bundle.putString("data", dataStr);
-			Message msg = new Message();
-			msg.what = mode;
-			msg.setData(bundle);
-			handler.sendMessage(msg);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-
-	public void scan() {
-		if (mSerialPort.scaner_trig_stat() == true) {
-			mSerialPort.scaner_trigoff();
-			try {
-				Thread.sleep(50);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-		mSerialPort.scaner_trigon();
-	}
-
-	public void close() {
-		if (mSerialPort != null) {
-			mSerialPort.scaner_poweroff();
-			try {
-				if (is != null) {
-					is.close();
-				}
-				if (os != null) {
-					os.close();
-				}
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			mSerialPort.close(port);
-		}
-	}
-
+    companion object {
+        var SCAN: Int = 1001 // message receive mode
+    }
 }

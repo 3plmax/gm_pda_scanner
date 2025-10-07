@@ -1,115 +1,94 @@
-package com.shipitdone.scanner.manager.variant;
+package com.shipitdone.scanner.manager.variant
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.device.ScanDevice;
-import android.os.Handler;
-import android.os.Looper;
-import androidx.annotation.NonNull;
-import android.view.KeyEvent;
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.device.ScanDevice
+import android.os.Handler
+import android.os.Looper
+import android.view.KeyEvent
+import com.shipitdone.scanner.manager.ScannerManager
+import com.shipitdone.scanner.manager.ScannerVariantManager.ScanListener
+import com.shipitdone.scanner.util.BroadcastUtil.registerReceiver
 
-import com.shipitdone.scanner.manager.ScannerManager;
-import com.shipitdone.scanner.manager.ScannerVariantManager;
-import com.shipitdone.scanner.util.BroadcastUtil;
-
-public class PdaScannerManager implements ScannerManager {
-    private Handler handler = new Handler(Looper.getMainLooper());
-    private Context mContext;
-    private ScannerVariantManager.ScanListener listener;
-    private static final String ACTION_DATA_CODE_RECEIVED = "scan.rcv.message";
-    private static PdaScannerManager instance;
-
-    private BroadcastReceiver receiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, final Intent intent) {
-            handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    byte[] broadCode = intent.getByteArrayExtra("barocode");
-                    String code = new String(broadCode);
+class PdaScannerManager : ScannerManager {
+    private val handler = Handler(Looper.getMainLooper())
+    private var listener: ScanListener? = null
+    private val receiver: BroadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent) {
+            handler.post(object : Runnable {
+                override fun run() {
+                    val broadCode = intent.getByteArrayExtra(RESULT_PARAMETER)
+                    val code = String(broadCode!!)
                     if (!code.isEmpty()) {
-                        listener.onScannerResultChange(code);
+                        listener!!.onScannerResultChange(code)
                     }
                 }
-            });
+            })
         }
-    };
-    private ScanDevice mScanDevice;
+    }
+    private var mScanDevice: ScanDevice? = null
 
-    private PdaScannerManager(Context activity) {
-        this.mContext = activity;
+    override fun init(context: Context) {
+        mScanDevice = ScanDevice()
+        mScanDevice!!.openScan()
+        mScanDevice!!.outScanMode = 0
+        registerReceiver(context)
+        listener!!.onScannerServiceConnected()
     }
 
-    public static PdaScannerManager getInstance(Context activity) {
-        if (instance == null) {
-            synchronized (UrovoScannerManager.class) {
-                if (instance == null) {
-                    instance = new PdaScannerManager(activity);
+    override fun recycle(context: Context) {
+    }
+
+    override fun setScannerListener(listener: ScanListener) {
+        this.listener = listener
+    }
+
+    override fun sendKeyEvent(key: KeyEvent?) {
+    }
+
+    override fun getScannerModel(): Int {
+        return 0
+    }
+
+    override fun scannerEnable(context: Context, enable: Boolean) {
+    }
+
+    override fun setScanMode(mode: String?) {
+    }
+
+    override fun setDataTransferType(type: String?) {
+    }
+
+    override fun singleScan(context: Context, bool: Boolean) {
+        mScanDevice!!.startScan()
+    }
+
+    override fun continuousScan(context: Context, bool: Boolean) {
+    }
+
+    private fun registerReceiver(context: Context) {
+        val intentFilter = IntentFilter()
+        intentFilter.addAction(ACTION_DATA_RECEIVED)
+        registerReceiver(context, receiver, intentFilter)
+    }
+
+    companion object {
+        private var instance: PdaScannerManager? = null
+
+        const val ACTION_DATA_RECEIVED = "scan.rcv.message"
+        const val RESULT_PARAMETER = "barcode"
+
+        fun getInstance(): PdaScannerManager {
+            if (instance == null) {
+                synchronized(UrovoScannerManager::class.java) {
+                    if (instance == null) {
+                        instance = PdaScannerManager()
+                    }
                 }
             }
+            return instance!!
         }
-        return instance;
-    }
-
-    @Override
-    public void init() {
-        mScanDevice = new ScanDevice();
-        mScanDevice.openScan();
-        mScanDevice.setOutScanMode(0);
-        registerReceiver();
-        listener.onScannerServiceConnected();
-    }
-
-    @Override
-    public void recycle() {
-
-    }
-
-    @Override
-    public void setScannerListener(@NonNull ScannerVariantManager.ScanListener listener) {
-        this.listener = listener;
-    }
-
-    @Override
-    public void sendKeyEvent(KeyEvent key) {
-
-    }
-
-    @Override
-    public int getScannerModel() {
-        return 0;
-    }
-
-    @Override
-    public void scannerEnable(boolean enable) {
-
-    }
-
-    @Override
-    public void setScanMode(String mode) {
-
-    }
-
-    @Override
-    public void setDataTransferType(String type) {
-
-    }
-
-    @Override
-    public void singleScan(boolean bool) {
-        mScanDevice.startScan();
-    }
-
-    @Override
-    public void continuousScan(boolean bool) {
-
-    }
-
-    private void registerReceiver() {
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(ACTION_DATA_CODE_RECEIVED);
-        BroadcastUtil.registerReceiver(mContext, receiver, intentFilter);
     }
 }

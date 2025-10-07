@@ -1,13 +1,14 @@
-package com.shipitdone.scanner.util;
+package com.shipitdone.scanner.util
 
-import android.util.Log;
+import android.util.Log
 
-public class LogUtil {
-    public static boolean openLog = false;
+object LogUtil {
+    var openLog: Boolean = false
 
-    public static void printLog(String log) {
+    @JvmStatic
+    fun printLog(log: String) {
         if (openLog) {
-            Log.i("Scanner_TAG", log);
+            Log.i("Scanner_TAG", log)
         }
     }
 }

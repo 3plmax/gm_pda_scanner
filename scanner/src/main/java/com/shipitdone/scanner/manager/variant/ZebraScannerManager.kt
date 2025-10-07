@@ -7,9 +7,11 @@ import android.content.IntentFilter
 import android.view.KeyEvent
 import com.shipitdone.scanner.manager.ScannerManager
 import com.shipitdone.scanner.manager.ScannerVariantManager.ScanListener
-import com.shipitdone.scanner.util.BroadcastUtil.registerReceiver
+import com.shipitdone.scanner.util.BroadcastUtil
 
-class Pdt90fScannerManager : ScannerManager {
+class ZebraScannerManager : ScannerManager {
+
+
     private var listener: ScanListener? = null
 
     private val receiver: BroadcastReceiver = object : BroadcastReceiver() {
@@ -22,26 +24,8 @@ class Pdt90fScannerManager : ScannerManager {
     }
 
     override fun init(context: Context) {
-        initSetting(context)
         registerReceiver(context)
         listener!!.onScannerServiceConnected()
-    }
-
-    private fun initSetting(context: Context) {
-        val intent = Intent(ACTION_SCANNER_SETTING)
-        intent.putExtra("endchar", "NONE")
-        intent.putExtra("scan_continue", false)
-        intent.putExtra("barcode_send_mode", "BROADCAST")
-        intent.putExtra("action_barcode_broadcast", "com.android.server.scannerservice.broadcast")
-        intent.putExtra("key_barcode_broadcast", "scannerdata")
-        context.sendBroadcast(intent)
-    }
-
-    private fun registerReceiver(context: Context) {
-        val intentFilter = IntentFilter()
-        intentFilter.addAction(ACTION_DATA_RECEIVED)
-        intentFilter.priority = Int.Companion.MAX_VALUE
-        registerReceiver(context, receiver, intentFilter)
     }
 
     override fun recycle(context: Context) {
@@ -60,9 +44,17 @@ class Pdt90fScannerManager : ScannerManager {
     }
 
     override fun scannerEnable(context: Context, enable: Boolean) {
-        val intent = Intent("com.android.scanner.ENABLED")
-        intent.putExtra("enabled", enable)
-        context.sendBroadcast(intent)
+        if (enable) {
+            val i = Intent()
+            i.action = "com.symbol.datawedge.api.ACTION"
+            i.putExtra("com.symbol.datawedge.api.SCANNER_INPUT_PLUGIN", "RESUME_PLUGIN")
+            context.sendBroadcast(i)
+        } else {
+            val i = Intent()
+            i.action = "com.symbol.datawedge.api.ACTION"
+            i.putExtra("com.symbol.datawedge.api.SCANNER_INPUT_PLUGIN", "SUSPEND_PLUGIN")
+            context.sendBroadcast(i)
+        }
     }
 
     override fun setScanMode(mode: String?) {
@@ -75,23 +67,25 @@ class Pdt90fScannerManager : ScannerManager {
     }
 
     override fun continuousScan(context: Context, bool: Boolean) {
-        val intent = Intent(ACTION_SCANNER_SETTING)
-        intent.putExtra("scan_continue", bool)
-        context.sendBroadcast(intent)
+    }
+
+    private fun registerReceiver(context: Context) {
+        val intentFilter = IntentFilter()
+        intentFilter.addAction(ACTION_DATA_RECEIVED)
+        BroadcastUtil.registerReceiver(context, receiver, intentFilter)
     }
 
     companion object {
-        private var instance: Pdt90fScannerManager? = null
+        private var instance: ZebraScannerManager? = null
 
-        const val ACTION_DATA_RECEIVED: String = "com.android.server.scannerservice.broadcast"
-        const val ACTION_SCANNER_SETTING: String = "com.android.scanner.service_settings"
-        private const val RESULT_PARAMETER = "scannerdata"
+        const val ACTION_DATA_RECEIVED = "com.shipitdone.pickpack.ACTION_BARCODE_SCANNED"
+        const val RESULT_PARAMETER = "com.symbol.datawedge.data_string"
 
-        fun getInstance(): Pdt90fScannerManager {
+        fun getInstance(): ZebraScannerManager {
             if (instance == null) {
-                synchronized(Pdt90fScannerManager::class.java) {
+                synchronized(ZebraScannerManager::class.java) {
                     if (instance == null) {
-                        instance = Pdt90fScannerManager()
+                        instance = ZebraScannerManager()
                     }
                 }
             }

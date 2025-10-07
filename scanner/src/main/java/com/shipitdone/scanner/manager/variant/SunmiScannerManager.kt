@@ -1,124 +1,99 @@
-package com.shipitdone.scanner.manager.variant;
+package com.shipitdone.scanner.manager.variant
 
-import static android.content.Context.RECEIVER_EXPORTED;
+import android.app.Service
+import android.content.BroadcastReceiver
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.content.ServiceConnection
+import android.os.Handler
+import android.os.IBinder
+import android.os.Looper
+import android.os.RemoteException
+import android.util.Log
+import android.view.KeyEvent
+import com.shipitdone.scanner.manager.ScannerManager
+import com.shipitdone.scanner.manager.ScannerVariantManager.ScanListener
+import com.shipitdone.scanner.util.BroadcastUtil.registerReceiver
+import com.sunmi.scanner.IScanInterface
 
-import android.app.Service;
-import android.content.BroadcastReceiver;
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.ServiceConnection;
-import android.os.Build;
-import android.os.Handler;
-import android.os.IBinder;
-import android.os.Looper;
-import android.os.RemoteException;
-import androidx.annotation.NonNull;
-import android.util.Log;
-import android.view.KeyEvent;
+class SunmiScannerManager : ScannerManager {
+    private val handler = Handler(Looper.getMainLooper())
+    private var serviceIntent: Intent? = null
+    private var listener: ScanListener? = null
+    private var singleScanFlag = false
 
-import com.shipitdone.scanner.manager.ScannerManager;
-import com.shipitdone.scanner.manager.ScannerVariantManager;
-import com.shipitdone.scanner.util.BroadcastUtil;
-import com.sunmi.scanner.IScanInterface;
-
-public class SunmiScannerManager implements ScannerManager {
-    private Handler handler = new Handler(Looper.getMainLooper());
-    public static final String ACTION_DATA_CODE_RECEIVED = "com.sunmi.scanner.ACTION_DATA_CODE_RECEIVED";
-    private static final String DATA = "data";
-    private Context activity;
-    private static IScanInterface scanInterface;
-    private static SunmiScannerManager instance;
-    private Intent serviceIntent;
-    private ScannerVariantManager.ScanListener listener;
-    private boolean singleScanFlag = false;
-
-    private ServiceConnection conn = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName componentName, IBinder service) {
-            if (listener != null) {
-                listener.onScannerServiceConnected();
-            } else {
-                listener.onScannerInitFail();
-            }
-            scanInterface = IScanInterface.Stub.asInterface(service);
+    private val conn: ServiceConnection = object : ServiceConnection {
+        override fun onServiceConnected(componentName: ComponentName?, service: IBinder?) {
+            listener?.onScannerServiceConnected()
+            scanInterface = IScanInterface.Stub.asInterface(service)
         }
 
-        @Override
-        public void onServiceDisconnected(ComponentName componentName) {
+        override fun onServiceDisconnected(componentName: ComponentName?) {
             if (listener != null) {
-                listener.onScannerServiceDisconnected();
+                listener!!.onScannerServiceDisconnected()
             }
-            scanInterface = null;
+            scanInterface = null
         }
-    };
+    }
 
-    private BroadcastReceiver receiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, final Intent intent) {
-            handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    String code = intent.getStringExtra(DATA);
+    private val receiver: BroadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent) {
+            handler.post(object : Runnable {
+                override fun run() {
+                    val code = intent.getStringExtra(RESULT_PARAMETER)
                     if (code != null && !code.isEmpty()) {
                         if (listener != null) {
-                            listener.onScannerResultChange(code);
+                            listener!!.onScannerResultChange(code)
                         }
                         if (singleScanFlag) {
-                            singleScanFlag = false;
+                            singleScanFlag = false
                             try {
-                                scanInterface.stop();
-                            } catch (RemoteException e) {
-                                e.printStackTrace();
+                                scanInterface!!.stop()
+                            } catch (e: RemoteException) {
+                                e.printStackTrace()
                             }
                         }
                     }
                 }
-            });
+            })
         }
-    };
-
-    private SunmiScannerManager(Context activity) {
-        this.activity = activity;
     }
 
-    public static SunmiScannerManager getInstance(Context activity) {
-        if (instance == null) {
-            synchronized (SunmiScannerManager.class) {
-                if (instance == null) {
-                    instance = new SunmiScannerManager(activity);
-                }
-            }
-        }
-        return instance;
+    override fun init(context: Context) {
+        bindService(context)
+        registerReceiver(context)
     }
 
-    @Override
-    public void init() {
-        bindService();
-        registerReceiver();
+    private fun registerReceiver(context: Context) {
+        val intentFilter = IntentFilter()
+        intentFilter.addAction(ACTION_DATA_RECEIVED)
+        registerReceiver(context, receiver, intentFilter)
     }
 
-
-    @Override
-    public void recycle() {
-        activity.stopService(serviceIntent);
-        activity.unregisterReceiver(receiver);
-        this.listener = null;
+    private fun bindService(context: Context) {
+        serviceIntent = Intent()
+        serviceIntent!!.setPackage("com.sunmi.scanner")
+        serviceIntent!!.action = "com.sunmi.scanner.IScanInterface"
+        context.bindService(serviceIntent!!, conn, Service.BIND_AUTO_CREATE)
     }
 
-    @Override
-    public void setScannerListener(@NonNull ScannerVariantManager.ScanListener listener) {
-        this.listener = listener;
+    override fun recycle(context: Context) {
+        context.stopService(serviceIntent)
+        context.unregisterReceiver(receiver)
+        this.listener = null
     }
 
-    @Override
-    public void sendKeyEvent(KeyEvent key) {
+    override fun setScannerListener(listener: ScanListener) {
+        this.listener = listener
+    }
+
+    override fun sendKeyEvent(key: KeyEvent?) {
         try {
-            scanInterface.sendKeyEvent(key);
-        } catch (Exception e) {
-            e.printStackTrace();
+            scanInterface!!.sendKeyEvent(key)
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -127,66 +102,65 @@ public class SunmiScannerManager implements ScannerManager {
      *
      * @return int 100 -> NONE 101 -> P2Lite 102 -> L2-newLane 103 -> L2 -zabra
      */
-    @Override
-    public int getScannerModel() {
+    override fun getScannerModel(): Int {
         try {
-            return scanInterface.getScannerModel();
-        } catch (Exception e) {
-            e.printStackTrace();
+            return scanInterface!!.getScannerModel()
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
-        return -1;
+        return -1
     }
 
-    @Override
-    public void scannerEnable(boolean enable) {
-        Log.d("pda", "此设备不支持该方法");
+    override fun scannerEnable(context: Context, enable: Boolean) {
+        Log.d("pda", "此设备不支持该方法")
     }
 
-    @Override
-    public void setScanMode(String mode) {
-
+    override fun setScanMode(mode: String?) {
     }
 
-    @Override
-    public void setDataTransferType(String type) {
-
+    override fun setDataTransferType(type: String?) {
     }
 
-    @Override
-    public void singleScan(boolean bool) {
+    override fun singleScan(context: Context, bool: Boolean) {
         try {
             if (bool) {
-                scanInterface.scan();
-                singleScanFlag = true;
+                scanInterface!!.scan()
+                singleScanFlag = true
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
-    @Override
-    public synchronized void continuousScan(boolean bool) {
+    @Synchronized
+    override fun continuousScan(context: Context, bool: Boolean) {
         try {
             if (bool) {
-                scanInterface.scan();
+                scanInterface!!.scan()
             } else {
-                scanInterface.stop();
+                scanInterface!!.stop()
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
-    private void bindService() {
-        serviceIntent = new Intent();
-        serviceIntent.setPackage("com.sunmi.scanner");
-        serviceIntent.setAction("com.sunmi.scanner.IScanInterface");
-        activity.bindService(serviceIntent, conn, Service.BIND_AUTO_CREATE);
-    }
+    companion object {
+        private var scanInterface: IScanInterface? = null
+        private var instance: SunmiScannerManager? = null
 
-    private void registerReceiver() {
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(ACTION_DATA_CODE_RECEIVED);
-        BroadcastUtil.registerReceiver(activity, receiver, intentFilter);
+        const val ACTION_DATA_RECEIVED: String = "com.sunmi.scanner.ACTION_DATA_CODE_RECEIVED"
+        const val RESULT_PARAMETER = "data"
+
+        fun getInstance(): SunmiScannerManager {
+            if (instance == null) {
+                synchronized(SunmiScannerManager::class.java) {
+                    if (instance == null) {
+                        instance = SunmiScannerManager()
+                    }
+                }
+            }
+            return instance!!
+        }
     }
 }

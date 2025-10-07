@@ -1,127 +1,97 @@
-package com.shipitdone.scanner.manager;
+package com.shipitdone.scanner.manager
 
-import static com.shipitdone.scanner.manager.ScannerBrand.getCurrent;
+import android.content.Context
+import android.util.Log
+import android.view.KeyEvent
+import com.shipitdone.scanner.manager.variant.AlpsScannerManager
+import com.shipitdone.scanner.manager.variant.Ct58ScannerManager
+import com.shipitdone.scanner.manager.variant.HandHeldScannerManager
+import com.shipitdone.scanner.manager.variant.IdataScannerManager
+import com.shipitdone.scanner.manager.variant.JepowerScannerManager
+import com.shipitdone.scanner.manager.variant.Kp18ScannerManager
+import com.shipitdone.scanner.manager.variant.NewlandScannerManager
+import com.shipitdone.scanner.manager.variant.OtherScannerManager
+import com.shipitdone.scanner.manager.variant.PdaScannerManager
+import com.shipitdone.scanner.manager.variant.Pdt90fScannerManager
+import com.shipitdone.scanner.manager.variant.SeuicScannerManager
+import com.shipitdone.scanner.manager.variant.SiganScannerManager
+import com.shipitdone.scanner.manager.variant.SunmiScannerManager
+import com.shipitdone.scanner.manager.variant.UrovoScannerManager
+import com.shipitdone.scanner.manager.variant.ZebraScannerManager.Companion.getInstance
 
-import android.content.Context;
-import androidx.annotation.NonNull;
-import android.util.Log;
-import android.view.KeyEvent;
+class ScannerVariantManager<T : ScannerManager?>(context: Context, listener: ScanListener) {
+    private var scannerManager: T? = null
 
-import com.shipitdone.scanner.manager.variant.HandHeldScannerManager;
-import com.shipitdone.scanner.manager.variant.Ct58ScannerManager;
-import com.shipitdone.scanner.manager.variant.JepowerScannerManager;
-import com.shipitdone.scanner.manager.variant.Kp18ScannerManager;
-import com.shipitdone.scanner.manager.variant.PdaScannerManager;
-import com.shipitdone.scanner.manager.variant.Pdt90fScannerManager;
-import com.shipitdone.scanner.manager.variant.SiganScannerManager;
-import com.shipitdone.scanner.manager.variant.AlpsScannerManager;
-import com.shipitdone.scanner.manager.variant.IdataScannerManager;
-import com.shipitdone.scanner.manager.variant.NewlandScannerManager;
-import com.shipitdone.scanner.manager.variant.OtherScannerManager;
-import com.shipitdone.scanner.manager.variant.SeuicScannerManager;
-import com.shipitdone.scanner.manager.variant.SunmiScannerManager;
-import com.shipitdone.scanner.manager.variant.UrovoScannerManager;
+    init {
+        val scannerBrand = ScannerBrand.current
+        Log.i("Scanner", "[ScannerBrand] =$scannerBrand")
+        when (scannerBrand) {
+            ScannerBrand.UROVO -> scannerManager = UrovoScannerManager.getInstance() as T?
+            ScannerBrand.SUNMI -> scannerManager = SunmiScannerManager.getInstance() as T?
+            ScannerBrand.ALPS -> scannerManager = AlpsScannerManager.getInstance() as T?
+            ScannerBrand.SEUIC -> scannerManager = SeuicScannerManager.getInstance() as T?
+            ScannerBrand.NEWLAND -> scannerManager = NewlandScannerManager.getInstance() as T?
+            ScannerBrand.IDATA -> scannerManager = IdataScannerManager.getInstance() as T?
+            ScannerBrand.SIGAN -> scannerManager = SiganScannerManager.getInstance() as T?
+            ScannerBrand.JEPOWER -> scannerManager = JepowerScannerManager.getInstance() as T?
+            ScannerBrand.HAND_HELD -> scannerManager = HandHeldScannerManager.getInstance() as T?
+            ScannerBrand.ZEBRA -> scannerManager = getInstance() as T
 
-public class ScannerVariantManager<T extends ScannerManager> {
-    private static ScannerVariantManager<ScannerManager> instance;
-    private T scannerManager;
+            ScannerBrand.GENERIC_PDA -> scannerManager = PdaScannerManager.getInstance() as T?
+            ScannerBrand.GENERIC_PDT90F -> scannerManager = Pdt90fScannerManager.getInstance() as T?
+            ScannerBrand.GENERIC_CT58 -> scannerManager = Ct58ScannerManager.getInstance() as T?
+            ScannerBrand.GENERIC_KP18 -> scannerManager = Kp18ScannerManager.getInstance() as T?
 
-    public ScannerVariantManager(Context context, @NonNull ScanListener listener) {
-        ScannerBrand scannerBrand = getCurrent();
-        Log.i("Scanner","[ScannerBrand] ="+scannerBrand);
-        switch (scannerBrand) {
-            case UROVO:
-                scannerManager = (T) UrovoScannerManager.getInstance(context);
-                break;
-            case SUNMI:
-                scannerManager = (T) SunmiScannerManager.getInstance(context);
-                break;
-            case ALPS:
-                scannerManager = (T) AlpsScannerManager.getInstance(context);
-                break;
-            case SEUIC:
-                scannerManager = (T) SeuicScannerManager.getInstance(context);
-                break;
-            case NEWLAND:
-                scannerManager = (T) NewlandScannerManager.getInstance(context);
-                break;
-            case IDATA:
-                scannerManager = (T) IdataScannerManager.getInstance(context);
-                break;
-            case SIGAN:
-                scannerManager = (T) SiganScannerManager.getInstance(context);
-                break;
-            case JEPOWER:
-                scannerManager = (T) JepowerScannerManager.getInstance(context);
-                break;
-            case HAND_HELD:
-                scannerManager = (T) HandHeldScannerManager.getInstance(context);
-                break;
-            case GENERIC_PDA:
-                scannerManager = (T) PdaScannerManager.getInstance(context);
-                break;
-            case GENERIC_PDT90F:
-                scannerManager = (T) Pdt90fScannerManager.getInstance(context);
-                break;
-            case GENERIC_CT58:
-                scannerManager = (T) Ct58ScannerManager.getInstance(context);
-                break;
-            case GENERIC_KP18:
-                scannerManager = (T) Kp18ScannerManager.getInstance(context);
-                break;
-            default:
-                scannerManager = (T) new OtherScannerManager(context);
-                break;
+            else -> scannerManager = OtherScannerManager() as T
         }
 
-        Log.i("Scanner","[scannerManager] ="+scannerManager);
-        scannerManager.setScannerListener(listener);
-        scannerManager.init();
+        Log.i("Scanner", "[scannerManager] =$scannerManager")
+        scannerManager!!.setScannerListener(listener)
+        scannerManager!!.init(context)
     }
 
-    public void recycle() {
-        scannerManager.recycle();
+    fun recycle(context: Context) {
+        scannerManager!!.recycle(context)
     }
 
-    public void setScannerListener(@NonNull ScanListener listener) {
-        scannerManager.setScannerListener(listener);
+    fun setScannerListener(listener: ScanListener) {
+        scannerManager!!.setScannerListener(listener)
     }
 
-    public void sendKeyEvent(KeyEvent key) {
-        scannerManager.sendKeyEvent(key);
+    fun sendKeyEvent(key: KeyEvent?) {
+        scannerManager!!.sendKeyEvent(key)
     }
 
-    public int getScannerModel() {
-        return scannerManager.getScannerModel();
+    val scannerModel: Int
+        get() = scannerManager!!.getScannerModel()
+
+    fun scannerEnable(context: Context, enable: Boolean) {
+        scannerManager!!.scannerEnable(context, enable)
     }
 
-    public void scannerEnable(Boolean enable) {
-        scannerManager.scannerEnable(enable);
+    fun setScanMode(mode: String?) {
+        scannerManager!!.setScanMode(mode)
     }
 
-    public void setScanMode(String mode) {
-        scannerManager.setScanMode(mode);
+    fun setDataTransferType(type: String?) {
+        scannerManager!!.setDataTransferType(type)
     }
 
-    public void setDataTransferType(String type) {
-        scannerManager.setDataTransferType(type);
+    fun singleScan(context: Context, bool: Boolean) {
+        scannerManager!!.singleScan(context, bool)
     }
 
-    public void singleScan(Boolean bool) {
-        scannerManager.singleScan(bool);
+    fun continuousScan(context: Context, bool: Boolean) {
+        scannerManager!!.continuousScan(context, bool)
     }
 
-    public void continuousScan(Boolean bool) {
-        scannerManager.continuousScan(bool);
-    }
+    interface ScanListener {
+        fun onScannerResultChange(result: String?)
 
-    public interface ScanListener {
-        void onScannerResultChange(String result);
+        fun onScannerServiceConnected()
 
-        void onScannerServiceConnected();
+        fun onScannerServiceDisconnected()
 
-        void onScannerServiceDisconnected();
-
-        void onScannerInitFail();
+        fun onScannerInitFail()
     }
 }

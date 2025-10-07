@@ -1,24 +1,27 @@
-package com.shipitdone.scanner.util;
+package com.shipitdone.scanner.util
 
-import static android.content.Context.RECEIVER_EXPORTED;
+import android.annotation.SuppressLint
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.IntentFilter
+import android.os.Build
 
-import android.annotation.SuppressLint;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.IntentFilter;
-import android.os.Build;
-
-public class BroadcastUtil {
+object BroadcastUtil {
+    @JvmStatic
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
-    public static void registerReceiver(Context context, BroadcastReceiver receiver, IntentFilter intentFilter) {
+    fun registerReceiver(
+        context: Context?,
+        receiver: BroadcastReceiver?,
+        intentFilter: IntentFilter?
+    ) {
         if (context == null || receiver == null || intentFilter == null) {
-            return;
+            return
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            context.registerReceiver(receiver, intentFilter, RECEIVER_EXPORTED);
+            context.registerReceiver(receiver, intentFilter, Context.RECEIVER_EXPORTED)
         } else {
-            context.registerReceiver(receiver, intentFilter);
+            context.registerReceiver(receiver, intentFilter)
         }
     }
 }

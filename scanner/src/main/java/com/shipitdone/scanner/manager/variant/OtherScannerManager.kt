@@ -36,7 +36,6 @@ class OtherScannerManager : ScannerManager {
         registerReceiver(context, receiver, intentFilter)
         handler.post(object : Runnable {
             override fun run() {
-                Toast.makeText(context, "匹配默认配置", Toast.LENGTH_SHORT).show()
                 handler.postDelayed(object : Runnable {
                     override fun run() {
                         listener!!.onScannerServiceConnected()
